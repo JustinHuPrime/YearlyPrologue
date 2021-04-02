@@ -1,61 +1,30 @@
-/**
- * weeklyTime(dow, h, m): a weekly 24-hour time point (dow is one of sunday, monday, ..., friday, saturday)
- */
-weeklyTime(D, H, M) :- 0 =< H, H < 24, 0 =< M, M < 60, member(D, [sunday, monday, tuesday, wednesday, thursday, friday, saturday]).
+% time/2 :- A 24-hour timepoint, with some hour and minute
+% interval/3 :- An interval on some day, starting at some timepoint and ending a some timepoint
 
-/**
- * interval(start, end): a time interval - start and end are times which must have the same day of the week
- */
-interval(weeklyTime(D, H1, M1), weeklyTime(D, H2, M2)) :- weeklyTime(D, H1, M1), weeklyTime(D, H2, M2).
+% A section for some course, with some section number, at some abstract intervals
+section(cpsc110, 101, [interval(monday, time(08, 00), time(09, 00))]).
+section(cpsc110, 102, [interval(monday, time(09, 00), time(10, 00))]).
+section(cpsc121, 101, [interval(monday, time(08, 00), time(09, 00))]).
+section(cpsc121, 102, [interval(monday, time(09, 00), time(10, 00))]).
 
-/**
- * section(course, number, intervals): the named course has a section (with the
- * given number) that meets during the given intervals
- * 
- * intervals must not be empty
- */
-section(cpsc110, 101, [
-  interval(weeklyTime(monday, 08, 00), weeklyTime(monday, 09, 00))
-  ]).
+% True if first timepoint is before second timepoint
+before(time(H1, M1), time(H2, M2)) :- H1 < H2 ; (H1 = H2, M1 =< M2).
 
-/**
- * noCollide(a, b): true if intervals a and b don't collide
- */
-noCollide(interval(weeklyTime(D1, SH1, SM1),
-                   weeklyTime(D1, EH1, EM1)),
-          interval(weeklyTime(D2, SH2, SM2),
-                   weeklyTime(D2, EH2, EM2))) :-
-  D1 \= D2 ;
-  after(SH1, SM1, EH2, EM2) ;
-  after(SH2, SM2, EH1, EM1).
+% True if given interval doesn't collide with given interval
+noCollide4(interval(D1, S1, E1), interval(D2, S2, E2)) :- D1 \= D2 ; before(E1, S2) ; before(E2, S1).
 
-/**
- * after(h1, m1, h2, m2): true if first time is after second time
- */
-after(H1, _, H2, _) :- H2 < H1.
-after(H, M1, H, M2) :- M2 < M1.
+% True if given interval doesn't collide with given intervals
+noCollide3(_, []).
+noCollide3(T1, [T2 | Ts]) :- noCollide4(T1, T2), noCollide3(T1, Ts).
 
-/**
- * noCollides(i, l): true if no interval in l collides with i
- */
-noCollides(_, []).
-noCollides(I1, [I2 | I2s]) :- noCollide(I1, I2), noCollides(I1, I2s).
+% True if given interval doesn't collide with given sections
+noCollide2(_, []).
+noCollide2(T, [section(_, _, Ts) | Ss]) :- noCollide3(T, Ts), noCollide2(T, Ss).
 
-/**
- * noCollisions(a, b): true if no interval in a collides with any interval in b
- */
-noCollisions([], _).
-noCollisions([A | As], B) :- noCollides(A, B), noCollisions(As, B).
+% True if given intervals don't collide with given sections
+noCollide1([], _).
+noCollide1([T | Ts], Ss) :- noCollide2(T, Ss), noCollide1(Ts, Ss).
 
-/**
- * extractIntervals(Ss, Is): true if Is are the intervals of the Ss
- */
-extractIntervals([], []).
-extractIntervals([section(_, _, Is) | Ss], O) :- extractIntervals(Ss, O1), append(Is, O1, O).
-
-/**
- * valid(C, S): true if S is the smallest list of sections that don't collide
- * with each other and that contain every course requested
- */
+% Is the given course list covered by the sections, and are the sections valid?
 valid([], []).
-valid([C | Cs], [section(C, N, Is) | Ss]) :- section(C, N, Is), extractIntervals(Ss, O1), noCollisions(Is, O1), valid(Cs, Ss).
+valid([C | Cs], [section(C, N, Ts) | Ss]) :- section(C, N, Ts), valid(Cs, Ss), noCollide1(Ts, Ss). % ordering is important here - must compute Ss before requiring that Ts don't collide with them

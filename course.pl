@@ -28,12 +28,12 @@ noCollide1([T | Ts], Ss) :- noCollide2(T, Ss), noCollide1(Ts, Ss).
 noCollidingSections([]).
 noCollidingSections([S | Ss]) :- section(S, time, Ts), noCollide1(Ts, Ss), noCollidingSections(Ss).
 
-% Produces true if AllSchedules is the set of all schedules that cover the given courses
-scheduleAll(Cs, AllSchedules) :- setof(S, scheduleSingle(Cs, S), AllSchedules).
+% Produces true if AllSchedules is the set of all schedules that cover the given courses and meet given constraints
+scheduleAll(Cs, Constraints, AllSchedules) :- setof(S, scheduleSingle(Cs, Constraints, S), AllSchedules).
 
-% Produces true if AllSecs is a list of sections that cover the given courses and do not collide
+% Produces true if AllSecs is a list of sections that cover the given courses, do not collide, and meet given constraints
 scheduleSingle([], []).
-scheduleSingle(Cs, AllSecs) :- getSectionList(Cs, AllSecs), noCollidingSections(AllSecs).
+scheduleSingle(Cs, Constraints, AllSecs) :- getSectionList(Cs, AllSecs), noCollidingSections(AllSecs), meetsConstraints(Constraints, AllSecs).
 
 % true if the list of sections covers all of the given courses
 getSectionList([],[]).
@@ -46,11 +46,13 @@ getSections(C, S) :- course(C, requiredSections, Reqs), allRequiredSections(C, R
 allRequiredSections(_, [], []).
 allRequiredSections(C, [Req | Reqs], [S | Ss]) :- section(S, course, C), section(S, type, Req), allRequiredSections(C, Reqs, Ss).
 
-% Checks that all sections are in the same term
+% Checks that all sections are in the same terms (if one section is in both terms, so must the other sections)
 allSameTerm([]).
-allSameTerm([_]).
-allSameTerm([S1,S2]) :- section(S1, term, T), section(S2, term, T).
-allSameTerm([S1,S2|Ss]) :- section(S1, term, T), section(S2, term, T), allSameTerm([S2 | Ss]).
+allSameTerm([S | Ss]) :- section(S, time, Intervals), termInIntervals(Intervals, Terms), allInTerms(Terms, Ss).
+
+% true if all sections are within the given terms
+allInTerms(_, []).
+allInTerms(Terms, [Section | Sections]) :- section(Section, time, Intervals), termInIntervals(Intervals, Terms), allInTerms(Terms, Sections).
 
 % true if the list of sections meets all of the given constraints
 meetsConstraints([], _).
@@ -61,6 +63,12 @@ meetsConstraint(_, []).
 % true if the given sections meet the given constraint
 meetsConstraint(prequesitesMet, Sections) :- checkPreReqs(Sections, Sections).
 meetsConstraint(breakTime(Interval, Duration), Sections) :- permuteIntervals(Interval, Duration, Intervals), oneIntervalFree(Intervals, Sections).
+meetsConstraint(termRequired(Course, Term), Sections) :- inTerm(Course, Term, Sections).
+
+% true if all sections for given course occur in the given term.
+inTerm(_, _, []).
+inTerm(Course, Term, [Section | Sections]) :- section(Section, course, Course), section(Section, time, Intervals), termInIntervals(Intervals, [Term]), inTerm(Course, Term, Sections).
+inTerm(Course, Term, [Section | Sections]) :- section(Section, course, Course2), Course \= Course2, inTerm(Course, Term, Sections).
 
 % true if intervals is all intervals in half hour permutations between the start and end times that last duration long.
 permuteIntervals(interval(_, _, Start, End), Duration, []) :- duration(Start, NewEnd, Duration), strictlyBefore(End, NewEnd).
@@ -70,6 +78,7 @@ permuteIntervals(interval(Term, Day, Start, End), Duration, [interval(Term, Day,
 duration(time(StartHour, StartMinute), time(EndHour, EndMinute), time(DurationHour, DurationMinute)) :- StartMinute =< EndMinute, DurationHour is EndHour - StartHour, DurationMinute is EndMinute - StartMinute.
 duration(time(StartHour, StartMinute), time(EndHour, EndMinute), time(DurationHour, DurationMinute)) :- StartMinute > EndMinute, DurationHour is EndHour - StartHour - 1, DurationMinute is EndMinute - StartMinute + 60.
 
+% true if one interval in given intervals doesn't collide with given sections. (ormap)
 oneIntervalFree([Interval | _], Sections) :- noCollide2(Interval, Sections).
 oneIntervalFree([_ | Intervals], Sections) :- oneIntervalFree(Intervals, Sections).
 

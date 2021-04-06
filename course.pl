@@ -73,22 +73,26 @@ duration(time(StartHour, StartMinute), time(EndHour, EndMinute), time(DurationHo
 oneIntervalFree([Interval | _], Sections) :- noCollide2(Interval, Sections).
 oneIntervalFree([_ | Intervals], Sections) :- oneIntervalFree(Intervals, Sections).
 
-
 % true if all prereqs in AllSecs are scheduled before the course they are a prereq for
 checkPreReqs([], _).
 checkPreReqs([Section | Sections], AllSecs) :- checkPrereq(Section, AllSecs), checkPreReqs(Sections, AllSecs).
 
 % true if the prereqs of the given section happen before that section
 checkPrereq(Section, _) :- section(Section, course, Course), course(Course, prereqs, []).
-checkPrereq(Section, AllSecs) :- section(Section, course, Course), course(Course, prereqs, PreReqs), section(Section, term, Term), allPreReqsBefore(Term, PreReqs, AllSecs).
+checkPrereq(Section, AllSecs) :- section(Section, course, Course), course(Course, prereqs, PreReqs), section(Section, time, Intervals), terms(Intervals, Terms), allPreReqsBefore(Terms, PreReqs, AllSecs).
 
 % true if all prerequisites occur before the given term.
 allPreReqsBefore(_, _, []).
-allPreReqsBefore(Term, PreReqs, [Section | Sections]) :- section(Section, course, Course), member(Course, PreReqs), section(Section, term, Term2), Term > Term2, allPreReqsBefore(Term, PreReqs, Sections).
-allPreReqsBefore(Term, PreReqs, [Section | Sections]) :- section(Section, course, Course), nonmember(Course, PreReqs), allPreReqsBefore(Term, PreReqs, Sections).
+allPreReqsBefore([Term], PreReqs, [Section | Sections]) :- section(Section, course, Course), member(Course, PreReqs), section(Section, time, Intervals), terms(Intervals, [Term2]), Term > Term2, allPreReqsBefore([Term], PreReqs, Sections).
+allPreReqsBefore(Terms, PreReqs, [Section | Sections]) :- section(Section, course, Course), nonmember(Course, PreReqs), allPreReqsBefore(Terms, PreReqs, Sections).
+% currently, we are assuming a two term system. If there are only two terms and the course occurs in both, it is impossible for the prereqs to occur before the course
 
+% true of terms are the set of terms within the intervals
+terms(Intervals, Terms) :- setof(T, termInIntervals(Intervals, T), Terms).
 
-
+% produce true if given term is within given intervals
+termInIntervals([interval(Term, _, _, _) | _], Term).
+termInIntervals([_ | Intervals], Term) :- termInIntervals(Intervals, Term).
 
 % helpers
 % true if given element isn't in given list

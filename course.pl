@@ -23,9 +23,11 @@ noCollide2(T, Term, [S | Ss]) :- section(S, term, Term2), Term \= Term2, noColli
 noCollide1([], _, _).
 noCollide1([T | Ts], Term, Ss) :- noCollide2(T, Term, Ss), noCollide1(Ts, Term, Ss).
 
+schedule(Cs, AllSchedules) :- setof(S, scheduleInner(Cs, S), AllSchedules).
+
 % Produces true if AllSecs is a list of sections that cover the given courses and do not collide
-schedule([], []).
-schedule(Cs, AllSecs) :- getSectionList(Cs, AllSecs), noCollidingSections(AllSecs).
+scheduleInner([], []).
+scheduleInner(Cs, AllSecs) :- getSectionList(Cs, AllSecs), noCollidingSections(AllSecs).
 
 getSectionList([],[]).
 getSectionList([C | Cs], Sec) :- getSections(C, S), getSectionList(Cs, Ss), append(S, Ss, Sec).
@@ -96,3 +98,7 @@ section(cpsc100102, time, [interval(monday, time(12, 30), time(14, 00)), interva
 section(cpsc100102, course, cpsc100).
 section(cpsc100102, type, lecture).
 section(cpsc100102, term, 1).
+section(cpsc100103, time, [interval(saturday, time(12, 30), time(14, 00))]).
+section(cpsc100103, course, cpsc100).
+section(cpsc100103, type, lecture).
+section(cpsc100103, term, 1).

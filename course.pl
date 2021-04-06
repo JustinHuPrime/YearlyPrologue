@@ -61,6 +61,19 @@ meetsConstraint(_, []).
 
 % true if the given sections meet the given constraint
 meetsConstraint(prequesitesMet, Sections) :- checkPreReqs(Sections, Sections).
+meetsConstraint(breakTime(Interval, Duration), Sections) :- permuteIntervals(Interval, Duration, Intervals), oneIntervalFree(Intervals, Sections).
+
+% true if intervals is all intervals in half hour permutations between the start and end times that last duration long.
+permuteIntervals(interval(_, Start, End), Duration, []) :- duration(Start, NewEnd, Duration), strictlyBefore(End, NewEnd).
+permuteIntervals(interval(Day, Start, End), Duration, [interval(Day, Start, NewEnd) | Intervals]) :- duration(Start, NewEnd, Duration), duration(Start, NewStart, time(0, 30)), permuteIntervals(interval(Day, NewStart, End), Duration, Intervals).
+
+% true if the duration between start and end time is Duration
+duration(time(StartHour, StartMinute), time(EndHour, EndMinute), time(DurationHour, DurationMinute)) :- StartMinute =< EndMinute, DurationHour is EndHour - StartHour, DurationMinute is EndMinute - StartMinute.
+duration(time(StartHour, StartMinute), time(EndHour, EndMinute), time(DurationHour, DurationMinute)) :- StartMinute > EndMinute, DurationHour is EndHour - StartHour - 1, DurationMinute is EndMinute - StartMinute + 60.
+
+oneIntervalFree([Interval | _], Sections) :- noCollide2(Interval, Sections).
+oneIntervalFree([_ | Intervals], Sections) :- oneIntervalFree(Intervals, Sections).
+
 
 % true if all prereqs in AllSecs are scheduled before the course they are a prereq for
 checkPreReqs([], _).

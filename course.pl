@@ -48,11 +48,11 @@ allRequiredSections(C, [Req | Reqs], [S | Ss]) :- section(S, course, C), section
 
 % Checks that all sections are in the same terms (if one section is in both terms, so must the other sections)
 allSameTerm([]).
-allSameTerm([S | Ss]) :- section(S, time, Intervals), termInIntervals(Intervals, Terms), allInTerms(Terms, Ss).
+allSameTerm([S | Ss]) :- section(S, time, Intervals), terms(Intervals, Terms), allInTerms(Terms, Ss).
 
 % true if all sections are within the given terms
 allInTerms(_, []).
-allInTerms(Terms, [Section | Sections]) :- section(Section, time, Intervals), termInIntervals(Intervals, Terms), allInTerms(Terms, Sections).
+allInTerms(Terms, [Section | Sections]) :- section(Section, time, Intervals), terms(Intervals, Terms), allInTerms(Terms, Sections).
 
 % true if the list of sections meets all of the given constraints
 meetsConstraints([], _).
@@ -64,10 +64,22 @@ meetsConstraint(_, []).
 meetsConstraint(prequesitesMet, Sections) :- checkPreReqs(Sections, Sections).
 meetsConstraint(breakTime(Interval, Duration), Sections) :- permuteIntervals(Interval, Duration, Intervals), oneIntervalFree(Intervals, Sections).
 meetsConstraint(termRequired(Course, Term), Sections) :- inTerm(Course, Term, Sections).
+meetsConstraint(minimumCredits(Credits, Term), Sections) :- numberOfCredits(Sections, Term, Credit), Credit >= Credits.
+meetsConstraint(maximumCredits(Credits, Term), Sections) :- numberOfCredits(Sections, Term, Credit), Credit =< Credits.
+
+% true if credits is the number of credits in the given term.
+numberOfCredits([], _, 0).
+numberOfCredits([Section | Sections], Term, Credits) :- 
+   (countingSection(Section), section(Section, time, Intervals), terms(Intervals, Terms), member(Term, Terms) 
+   -> numberOfCredits(Sections, Term, RemainingCredits), section(Section, course, Course), course(Course, credits, CourseCredits), length(Terms, Div), Credits is RemainingCredits + (CourseCredits / Div) 
+   ; numberOfCredits(Sections, Term, Credits)).
+
+% true if it is the section we will count for the section's course. There should only be one such section per course
+countingSection(Section) :- section(Section, course, Course), course(Course, requiredSections, [Req|_]), section(Section, type, Req).
 
 % true if all sections for given course occur in the given term.
 inTerm(_, _, []).
-inTerm(Course, Term, [Section | Sections]) :- section(Section, course, Course), section(Section, time, Intervals), termInIntervals(Intervals, [Term]), inTerm(Course, Term, Sections).
+inTerm(Course, Term, [Section | Sections]) :- section(Section, course, Course), section(Section, time, Intervals), terms(Intervals, [Term]), inTerm(Course, Term, Sections).
 inTerm(Course, Term, [Section | Sections]) :- section(Section, course, Course2), Course \= Course2, inTerm(Course, Term, Sections).
 
 % true if intervals is all intervals in half hour permutations between the start and end times that last duration long.
@@ -168,7 +180,7 @@ course(cpsc200, prereqs, []).
 course(cpsc200, requiredSections, [lecture]).
 course(cpsc200, credits, 3).
 
-section(cpsc200101, time, [interval(1, tuesday, time(12, 30), time(14, 00)), interval(1, thursday, time(12, 30), time(14, 00))]).
-section(cpsc200101, course, cpsc100).
+section(cpsc200101, time, [interval(2, tuesday, time(12, 30), time(14, 00)), interval(1, thursday, time(12, 30), time(14, 00))]).
+section(cpsc200101, course, cpsc200).
 section(cpsc200101, type, lecture).
 section(cpsc200101, term, 1).

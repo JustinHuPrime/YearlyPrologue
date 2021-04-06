@@ -1,5 +1,5 @@
 % time/2 :- A 24-hour timepoint, with some hour and minute
-% interval/3 :- An interval on some day, starting at some timepoint and ending a some timepoint
+% interval/4 :- An interval in some term, on some day, starting at some timepoint and ending a some timepoint
 
 :- discontiguous section/3, course/3.
 
@@ -10,7 +10,7 @@ before(time(H1, M1), time(H2, M2)) :- H1 < H2 ; (H1 = H2, M1 =< M2).
 strictlyBefore(time(H1, M1), time(H2, M2)) :- H1 < H2 ; (H1 = H2, M1 < M2).
 
 % True if given interval doesn't collide with given interval
-noCollide4(interval(D1, S1, E1), interval(D2, S2, E2)) :- D1 \= D2 ; before(E1, S2) ; before(E2, S1).
+noCollide4(interval(T1, D1, S1, E1), interval(T2, D2, S2, E2)) :- T1 \= T2 ; D1 \= D2 ; before(E1, S2) ; before(E2, S1).
 
 % True if given interval doesn't collide with given intervals
 noCollide3(_, []).
@@ -18,16 +18,15 @@ noCollide3(T1, [T2 | Ts]) :- noCollide4(T1, T2), noCollide3(T1, Ts).
 
 % True if given interval doesn't collide with given sections
 noCollide2(_, _, []).
-noCollide2(T, Term, [S | Ss]) :- section(S, term, Term), section(S, time, Ts), noCollide3(T, Ts), noCollide2(T, Term, Ss).
-noCollide2(T, Term, [S | Ss]) :- section(S, term, Term2), Term \= Term2, noCollide2(T, Term, Ss).
+noCollide2(T, [S | Ss]) :- section(S, time, Ts), noCollide3(T, Ts), noCollide2(T, Ss).
 
 % True if given intervals don't collide with given sections
-noCollide1([], _, _).
-noCollide1([T | Ts], Term, Ss) :- noCollide2(T, Term, Ss), noCollide1(Ts, Term, Ss).
+noCollide1([], _).
+noCollide1([T | Ts], Ss) :- noCollide2(T, Ss), noCollide1(Ts, Ss).
 
 % Given a list of sections, checks if none collide
 noCollidingSections([]).
-noCollidingSections([S | Ss]) :- section(S, time, Ts), section(S, term, T), noCollide1(Ts, T, Ss), noCollidingSections(Ss).
+noCollidingSections([S | Ss]) :- section(S, time, Ts), noCollide1(Ts, Ss), noCollidingSections(Ss).
 
 % Produces true if AllSchedules is the set of all schedules that cover the given courses
 scheduleAll(Cs, AllSchedules) :- setof(S, scheduleSingle(Cs, S), AllSchedules).
@@ -64,8 +63,8 @@ meetsConstraint(prequesitesMet, Sections) :- checkPreReqs(Sections, Sections).
 meetsConstraint(breakTime(Interval, Duration), Sections) :- permuteIntervals(Interval, Duration, Intervals), oneIntervalFree(Intervals, Sections).
 
 % true if intervals is all intervals in half hour permutations between the start and end times that last duration long.
-permuteIntervals(interval(_, Start, End), Duration, []) :- duration(Start, NewEnd, Duration), strictlyBefore(End, NewEnd).
-permuteIntervals(interval(Day, Start, End), Duration, [interval(Day, Start, NewEnd) | Intervals]) :- duration(Start, NewEnd, Duration), duration(Start, NewStart, time(0, 30)), permuteIntervals(interval(Day, NewStart, End), Duration, Intervals).
+permuteIntervals(interval(_, _, Start, End), Duration, []) :- duration(Start, NewEnd, Duration), strictlyBefore(End, NewEnd).
+permuteIntervals(interval(Term, Day, Start, End), Duration, [interval(Term, Day, Start, NewEnd) | Intervals]) :- duration(Start, NewEnd, Duration), duration(Start, NewStart, time(0, 30)), permuteIntervals(interval(Term, Day, NewStart, End), Duration, Intervals).
 
 % true if the duration between start and end time is Duration
 duration(time(StartHour, StartMinute), time(EndHour, EndMinute), time(DurationHour, DurationMinute)) :- StartMinute =< EndMinute, DurationHour is EndHour - StartHour, DurationMinute is EndMinute - StartMinute.
@@ -104,15 +103,15 @@ course(cpsc110, requiredSections, [lecture, lab]).
 course(cpsc110, name, "CPSC 110 Computation, Programs, and Programming").
 course(cpsc110, credits, 4).
 
-section(cpsc110101, time, [interval(tuesday, time(12, 30), time(14, 00)), interval(thursday, time(12, 30), time(14, 00))]).
+section(cpsc110101, time, [interval(1, tuesday, time(12, 30), time(14, 00)), interval(1, thursday, time(12, 30), time(14, 00))]).
 section(cpsc110101, course, cpsc110).
 section(cpsc110101, type, lecture).
 section(cpsc110101, term, 1).
-section(cpsc110L11, time, [interval(wednesday, time(18, 00), time(21, 00))]).
+section(cpsc110L11, time, [interval(1, wednesday, time(18, 00), time(21, 00))]).
 section(cpsc110L11, course, cpsc110).
 section(cpsc110L11, type, lab).
 section(cpsc110L11, term, 1).
-section(cpsc110L21, time, [interval(friday, time(18, 00), time(21, 00))]).
+section(cpsc110L21, time, [interval(2, friday, time(18, 00), time(21, 00))]).
 section(cpsc110L21, course, cpsc110).
 section(cpsc110L21, type, lab).
 section(cpsc110L21, term, 2).
@@ -122,15 +121,15 @@ course(cpsc121, requiredSections, [lecture, lab]).
 course(cpsc121, name, "CPSC 121 Models of Computation").
 course(cpsc121, credits, 4).
 
-section(cpsc121101, time, [interval(tuesday, time(12, 30), time(14, 00)), interval(thursday, time(12, 30), time(14, 00))]).
+section(cpsc121101, time, [interval(2, tuesday, time(12, 30), time(14, 00)), interval(2, thursday, time(12, 30), time(14, 00))]).
 section(cpsc121101, course, cpsc121).
 section(cpsc121101, type, lecture).
 section(cpsc121101, term, 2).
-section(cpsc121L11, time, [interval(wednesday, time(18, 00), time(21, 00))]).
+section(cpsc121L11, time, [interval(1, wednesday, time(18, 00), time(21, 00))]).
 section(cpsc121L11, course, cpsc121).
 section(cpsc121L11, type, lab).
 section(cpsc121L11, term, 1).
-section(cpsc121L21, time, [interval(friday, time(18, 00), time(21, 00))]).
+section(cpsc121L21, time, [interval(2, friday, time(18, 00), time(21, 00))]).
 section(cpsc121L21, course, cpsc121).
 section(cpsc121L21, type, lab).
 section(cpsc121L21, term, 2).
@@ -139,15 +138,15 @@ course(cpsc100, prereqs, []).
 course(cpsc100, requiredSections, [lecture]).
 course(cpsc100, credits, 3).
 
-section(cpsc100101, time, [interval(tuesday, time(12, 30), time(14, 00)), interval(thursday, time(12, 30), time(14, 00))]).
+section(cpsc100101, time, [interval(1, tuesday, time(12, 30), time(14, 00)), interval(1, thursday, time(12, 30), time(14, 00))]).
 section(cpsc100101, course, cpsc100).
 section(cpsc100101, type, lecture).
 section(cpsc100101, term, 1).
-section(cpsc100102, time, [interval(monday, time(12, 30), time(14, 00)), interval(friday, time(12, 30), time(14, 00))]).
+section(cpsc100102, time, [interval(1, monday, time(12, 30), time(14, 00)), interval(1, friday, time(12, 30), time(14, 00))]).
 section(cpsc100102, course, cpsc100).
 section(cpsc100102, type, lecture).
 section(cpsc100102, term, 1).
-section(cpsc100103, time, [interval(saturday, time(12, 30), time(14, 00))]).
+section(cpsc100103, time, [interval(1, saturday, time(12, 30), time(14, 00))]).
 section(cpsc100103, course, cpsc100).
 section(cpsc100103, type, lecture).
 section(cpsc100103, term, 1).
@@ -156,7 +155,7 @@ course(cpsc200, prereqs, []).
 course(cpsc200, requiredSections, [lecture]).
 course(cpsc200, credits, 3).
 
-section(cpsc200101, time, [interval(tuesday, time(12, 30), time(14, 00)), interval(thursday, time(12, 30), time(14, 00))]).
+section(cpsc200101, time, [interval(1, tuesday, time(12, 30), time(14, 00)), interval(1, thursday, time(12, 30), time(14, 00))]).
 section(cpsc200101, course, cpsc100).
 section(cpsc200101, type, lecture).
 section(cpsc200101, term, 1).

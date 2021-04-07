@@ -17,8 +17,8 @@ noCollide3(_, []).
 noCollide3(T1, [T2 | Ts]) :- noCollide4(T1, T2), noCollide3(T1, Ts).
 
 % True if given interval doesn't collide with given sections
-noCollide2(_, _, []).
-noCollide2(T, [S | Ss]) :- section(S, time, Ts), noCollide3(T, Ts), noCollide2(T, Ss).
+noCollide2(_, []).
+noCollide2(T, [S | Ss]) :- section(S, times, Ts), noCollide3(T, Ts), noCollide2(T, Ss).
 
 % True if given intervals don't collide with given sections
 noCollide1([], _).
@@ -26,14 +26,29 @@ noCollide1([T | Ts], Ss) :- noCollide2(T, Ss), noCollide1(Ts, Ss).
 
 % Given a list of sections, checks if none collide
 noCollidingSections([]).
-noCollidingSections([S | Ss]) :- section(S, time, Ts), noCollide1(Ts, Ss), noCollidingSections(Ss).
+noCollidingSections([S | Ss]) :- section(S, times, Ts), noCollide1(Ts, Ss), noCollidingSections(Ss).
 
-% Produces true if AllSchedules is the set of all schedules that cover the given courses
-scheduleAll(Cs, AllSchedules) :- setof(S, scheduleSingle(Cs, S), AllSchedules).
 
-% Produces true if AllSecs is a list of sections that cover the given courses and do not collide
+scheduleChoices(Choices, Constraints, AllSchedules) :- setof(C, getCourseList(Choices, C), Lists), scheduleEach(Lists, Constraints, AllSchedules).
+
+scheduleEach([], _, []).
+scheduleEach([Courses | Lists], Constraints, AllSchedules) :- scheduleAll(Courses, Constraints, Schedules), scheduleEach(Lists, Constraints, RemainingSchedules), append(Schedules, RemainingSchedules, AllSchedules).
+
+% Produces true if AllSchedules is the set of all schedules that cover the given courses and meet given constraints
+scheduleAll(Courses, Constraints, AllSchedules) :- setof(S, scheduleSingle(Courses, Constraints, S), AllSchedules).
+
+% Produces true if AllSecs is a list of sections that cover the given courses, do not collide, and meet given constraints
 scheduleSingle([], []).
-scheduleSingle(Cs, AllSecs) :- getSectionList(Cs, AllSecs), noCollidingSections(AllSecs).
+scheduleSingle(Cs, Constraints, AllSecs) :- getSectionList(Cs, AllSecs), noCollidingSections(AllSecs), meetsConstraints(Constraints, AllSecs).
+
+% true if CourseList contains course choices
+getCourseList([], []).
+getCourseList([courseChoices(Courses, N) | Choices], CourseList) :- getCourses(Courses, N, C), getCourseList(Choices, Cs), append(C, Cs, CourseList).
+
+% true if course list contains exactly N courses from the selection list
+getCourses([], 0, []).
+getCourses([C | Cs], N, [C | Rest]) :- Sub is N - 1, getCourses(Cs, Sub, Rest).
+getCourses([_ | Cs], N, Rest) :- getCourses(Cs, N, Rest).
 
 % true if the list of sections covers all of the given courses
 getSectionList([],[]).
@@ -46,11 +61,13 @@ getSections(C, S) :- course(C, requiredSections, Reqs), allRequiredSections(C, R
 allRequiredSections(_, [], []).
 allRequiredSections(C, [Req | Reqs], [S | Ss]) :- section(S, course, C), section(S, type, Req), allRequiredSections(C, Reqs, Ss).
 
-% Checks that all sections are in the same term
+% Checks that all sections are in the same terms (if one section is in both terms, so must the other sections)
 allSameTerm([]).
-allSameTerm([_]).
-allSameTerm([S1,S2]) :- section(S1, term, T), section(S2, term, T).
-allSameTerm([S1,S2|Ss]) :- section(S1, term, T), section(S2, term, T), allSameTerm([S2 | Ss]).
+allSameTerm([S | Ss]) :- section(S, times, Intervals), terms(Intervals, Terms), allInTerms(Terms, Ss).
+
+% true if all sections are within the given terms
+allInTerms(_, []).
+allInTerms(Terms, [Section | Sections]) :- section(Section, times, Intervals), terms(Intervals, Terms), allInTerms(Terms, Sections).
 
 % true if the list of sections meets all of the given constraints
 meetsConstraints([], _).
@@ -59,8 +76,25 @@ meetsConstraints([Constraint | Constraints], Sections) :- meetsConstraint(Constr
 meetsConstraint(_, []).
 
 % true if the given sections meet the given constraint
-meetsConstraint(prequesitesMet, Sections) :- checkPreReqs(Sections, Sections).
 meetsConstraint(breakTime(Interval, Duration), Sections) :- permuteIntervals(Interval, Duration, Intervals), oneIntervalFree(Intervals, Sections).
+meetsConstraint(courseInTerm(Course, Term), Sections) :- inTerm(Course, Term, Sections).
+meetsConstraint(minimumCredits(Credits, Term), Sections) :- numberOfCredits(Sections, Term, Credit), Credit >= Credits.
+meetsConstraint(maximumCredits(Credits, Term), Sections) :- numberOfCredits(Sections, Term, Credit), Credit =< Credits.
+
+% true if credits is the number of credits in the given term.
+numberOfCredits([], _, 0).
+numberOfCredits([Section | Sections], Term, Credits) :- 
+   (countingSection(Section), section(Section, times, Intervals), terms(Intervals, Terms), member(Term, Terms) 
+   -> numberOfCredits(Sections, Term, RemainingCredits), section(Section, course, Course), course(Course, credits, CourseCredits), length(Terms, Div), Credits is RemainingCredits + (CourseCredits / Div) 
+   ; numberOfCredits(Sections, Term, Credits)).
+
+% true if it is the section we will count for the section's course. There should only be one such section per course
+countingSection(Section) :- section(Section, course, Course), course(Course, requiredSections, [Req|_]), section(Section, type, Req).
+
+% true if all sections for given course occur in the given term.
+inTerm(_, _, []).
+inTerm(Course, Term, [Section | Sections]) :- section(Section, course, Course), section(Section, times, Intervals), terms(Intervals, [Term]), inTerm(Course, Term, Sections).
+inTerm(Course, Term, [Section | Sections]) :- section(Section, course, Course2), Course \= Course2, inTerm(Course, Term, Sections).
 
 % true if intervals is all intervals in half hour permutations between the start and end times that last duration long.
 permuteIntervals(interval(_, _, Start, End), Duration, []) :- duration(Start, NewEnd, Duration), strictlyBefore(End, NewEnd).
@@ -70,22 +104,9 @@ permuteIntervals(interval(Term, Day, Start, End), Duration, [interval(Term, Day,
 duration(time(StartHour, StartMinute), time(EndHour, EndMinute), time(DurationHour, DurationMinute)) :- StartMinute =< EndMinute, DurationHour is EndHour - StartHour, DurationMinute is EndMinute - StartMinute.
 duration(time(StartHour, StartMinute), time(EndHour, EndMinute), time(DurationHour, DurationMinute)) :- StartMinute > EndMinute, DurationHour is EndHour - StartHour - 1, DurationMinute is EndMinute - StartMinute + 60.
 
+% true if one interval in given intervals doesn't collide with given sections. (ormap)
 oneIntervalFree([Interval | _], Sections) :- noCollide2(Interval, Sections).
 oneIntervalFree([_ | Intervals], Sections) :- oneIntervalFree(Intervals, Sections).
-
-% true if all prereqs in AllSecs are scheduled before the course they are a prereq for
-checkPreReqs([], _).
-checkPreReqs([Section | Sections], AllSecs) :- checkPrereq(Section, AllSecs), checkPreReqs(Sections, AllSecs).
-
-% true if the prereqs of the given section happen before that section
-checkPrereq(Section, _) :- section(Section, course, Course), course(Course, prereqs, []).
-checkPrereq(Section, AllSecs) :- section(Section, course, Course), course(Course, prereqs, PreReqs), section(Section, time, Intervals), terms(Intervals, Terms), allPreReqsBefore(Terms, PreReqs, AllSecs).
-
-% true if all prerequisites occur before the given term.
-allPreReqsBefore(_, _, []).
-allPreReqsBefore([Term], PreReqs, [Section | Sections]) :- section(Section, course, Course), member(Course, PreReqs), section(Section, time, Intervals), terms(Intervals, [Term2]), Term > Term2, allPreReqsBefore([Term], PreReqs, Sections).
-allPreReqsBefore(Terms, PreReqs, [Section | Sections]) :- section(Section, course, Course), nonmember(Course, PreReqs), allPreReqsBefore(Terms, PreReqs, Sections).
-% currently, we are assuming a two term system. If there are only two terms and the course occurs in both, it is impossible for the prereqs to occur before the course
 
 % true of terms are the set of terms within the intervals
 terms(Intervals, Terms) :- setof(T, termInIntervals(Intervals, T), Terms).
@@ -94,72 +115,52 @@ terms(Intervals, Terms) :- setof(T, termInIntervals(Intervals, T), Terms).
 termInIntervals([interval(Term, _, _, _) | _], Term).
 termInIntervals([_ | Intervals], Term) :- termInIntervals(Intervals, Term).
 
-% helpers
-% true if given element isn't in given list
-nonmember(_, []).
-nonmember(Elem, [Elem | _]) :- !, fail.
-nonmember(Elem, [_ | Tail]) :- !, nonmember(Elem, Tail).
-
 
 % Some course facts, to map out what this looks like
-course(cpsc110, prereqs, []).
 course(cpsc110, requiredSections, [lecture, lab]).
 course(cpsc110, name, "CPSC 110 Computation, Programs, and Programming").
 course(cpsc110, credits, 4).
 
-section(cpsc110101, time, [interval(1, tuesday, time(12, 30), time(14, 00)), interval(1, thursday, time(12, 30), time(14, 00))]).
+section(cpsc110101, times, [interval(1, tuesday, time(12, 30), time(14, 00)), interval(1, thursday, time(12, 30), time(14, 00))]).
 section(cpsc110101, course, cpsc110).
 section(cpsc110101, type, lecture).
-section(cpsc110101, term, 1).
-section(cpsc110L11, time, [interval(1, wednesday, time(18, 00), time(21, 00))]).
+section(cpsc110L11, times, [interval(1, wednesday, time(18, 00), time(21, 00))]).
 section(cpsc110L11, course, cpsc110).
 section(cpsc110L11, type, lab).
-section(cpsc110L11, term, 1).
-section(cpsc110L21, time, [interval(2, friday, time(18, 00), time(21, 00))]).
+section(cpsc110L21, times, [interval(2, friday, time(18, 00), time(21, 00))]).
 section(cpsc110L21, course, cpsc110).
 section(cpsc110L21, type, lab).
-section(cpsc110L21, term, 2).
 
-course(cpsc121, prereqs, []).
 course(cpsc121, requiredSections, [lecture, lab]).
 course(cpsc121, name, "CPSC 121 Models of Computation").
 course(cpsc121, credits, 4).
 
-section(cpsc121101, time, [interval(2, tuesday, time(12, 30), time(14, 00)), interval(2, thursday, time(12, 30), time(14, 00))]).
+section(cpsc121101, times, [interval(2, tuesday, time(12, 30), time(14, 00)), interval(2, thursday, time(12, 30), time(14, 00))]).
 section(cpsc121101, course, cpsc121).
 section(cpsc121101, type, lecture).
-section(cpsc121101, term, 2).
-section(cpsc121L11, time, [interval(1, wednesday, time(18, 00), time(21, 00))]).
+section(cpsc121L11, times, [interval(1, wednesday, time(18, 00), time(21, 00))]).
 section(cpsc121L11, course, cpsc121).
 section(cpsc121L11, type, lab).
-section(cpsc121L11, term, 1).
-section(cpsc121L21, time, [interval(2, friday, time(18, 00), time(21, 00))]).
+section(cpsc121L21, times, [interval(2, friday, time(18, 00), time(21, 00))]).
 section(cpsc121L21, course, cpsc121).
 section(cpsc121L21, type, lab).
-section(cpsc121L21, term, 2).
 
-course(cpsc100, prereqs, []).
 course(cpsc100, requiredSections, [lecture]).
 course(cpsc100, credits, 3).
 
-section(cpsc100101, time, [interval(1, tuesday, time(12, 30), time(14, 00)), interval(1, thursday, time(12, 30), time(14, 00))]).
+section(cpsc100101, times, [interval(1, tuesday, time(12, 30), time(14, 00)), interval(1, thursday, time(12, 30), time(14, 00))]).
 section(cpsc100101, course, cpsc100).
 section(cpsc100101, type, lecture).
-section(cpsc100101, term, 1).
-section(cpsc100102, time, [interval(1, monday, time(12, 30), time(14, 00)), interval(1, friday, time(12, 30), time(14, 00))]).
+section(cpsc100102, times, [interval(1, monday, time(12, 30), time(14, 00)), interval(1, friday, time(12, 30), time(14, 00))]).
 section(cpsc100102, course, cpsc100).
 section(cpsc100102, type, lecture).
-section(cpsc100102, term, 1).
-section(cpsc100103, time, [interval(1, saturday, time(12, 30), time(14, 00))]).
+section(cpsc100103, times, [interval(1, saturday, time(12, 30), time(14, 00))]).
 section(cpsc100103, course, cpsc100).
 section(cpsc100103, type, lecture).
-section(cpsc100103, term, 1).
 
-course(cpsc200, prereqs, []).
 course(cpsc200, requiredSections, [lecture]).
 course(cpsc200, credits, 3).
 
-section(cpsc200101, time, [interval(1, tuesday, time(12, 30), time(14, 00)), interval(1, thursday, time(12, 30), time(14, 00))]).
-section(cpsc200101, course, cpsc100).
+section(cpsc200101, times, [interval(1, monday, time(12, 30), time(14, 00)), interval(1, friday, time(12, 30), time(14, 00))]).
+section(cpsc200101, course, cpsc200).
 section(cpsc200101, type, lecture).
-section(cpsc200101, term, 1).

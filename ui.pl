@@ -48,7 +48,7 @@ handleCommand(["clear-optional"]) :-
 handleCommand(["num-optional", NumString]) :-
   optionalCourses(OptionalCourses), length(OptionalCourses, OptionalCoursesLen),
   (
-    termString(Num, NumString), Num =< OptionalCoursesLen, Num >= 0, retract(numOptional(_)), assert(numOptional(Num)) ;
+    number_string(Num, NumString), Num =< OptionalCoursesLen, Num >= 0, retract(numOptional(_)), assert(numOptional(Num)) ;
     write(NumString), write(" is not a valid number for "), write(OptionalCoursesLen), writeln(" courses")
   ).
 

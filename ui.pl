@@ -50,14 +50,14 @@ handleCommand(["clear-optional"]) :-
 handleCommand(["num-optional", NumString]) :-
   optionalCourses(OptionalCourses), length(OptionalCourses, OptionalCoursesLen),
   (
-    number_string(Num, NumString), Num =< OptionalCoursesLen, Num >= 0, retract(numOptional(_)), assert(numOptional(Num)) ;
+    termString(Num, NumString), Num =< OptionalCoursesLen, Num >= 0, retract(numOptional(_)), assert(numOptional(Num)) ;
     write(NumString), write(" is not a valid number for "), write(OptionalCoursesLen), writeln(" courses")
   ).
 
 % add-constraint no-classes-before <term> <day> <hour> <minute>: adds a constraint to avoid classes between 00:00 and hour:minute on day in term
 handleCommand(["add-constraint", "no-classes-before", TermString, DayString, HString, MString]) :-
   (
-    number_string(Term, TermString), parseDay(DayString, Day), hourString(H, HString), minuteString(M, MString), duration(time(00, 00), time(H, M), Duration),
+    termString(Term, TermString), parseDay(DayString, Day), hourString(H, HString), minuteString(M, MString), duration(time(00, 00), time(H, M), Duration),
     constraints(Constraints), retract(constraints(_)), sort([breakTime(interval(Term, Day, time(00, 00), time(H, M)), Duration) | Constraints], Sorted), assert(constraints(Sorted))
   ) ;
   writeln("Could not parse and validate at least one of:"),
@@ -68,7 +68,7 @@ handleCommand(["add-constraint", "no-classes-before", TermString, DayString, HSt
 % add-constraint no-classes-after <term> <day> <hour> <minute>: adds a constraint to avoid classes between hour:minute and 24:00 on day in term
 handleCommand(["add-constraint", "no-classes-after", TermString, DayString, HString, MString]) :-
   (
-    number_string(Term, TermString), parseDay(DayString, Day), hourString(H, HString), minuteString(M, MString), duration(time(H, M), time(24, 00), Duration),
+    termString(Term, TermString), parseDay(DayString, Day), hourString(H, HString), minuteString(M, MString), duration(time(H, M), time(24, 00), Duration),
     constraints(Constraints), retract(constraints(_)), sort([breakTime(interval(Term, Day, time(H, M), time(24, 00)), Duration) | Constraints], Sorted), assert(constraints(Sorted))
   ) ;
   writeln("Could not parse and validate at least one of:"),
@@ -79,7 +79,7 @@ handleCommand(["add-constraint", "no-classes-after", TermString, DayString, HStr
 % add-constraint break <term> <day> <startHour> <startMinute> <endHour> <endMinute> <hours> <minutes>: adds a constraints to have hours:minutes free between `start` and `end`
 handleCommand(["add-constraint", "break", TermString, DayString, StartHString, StartMString, EndHString, EndMString, HString, MString]) :-
   (
-    number_string(Term, TermString), parseDay(DayString, Day), hourString(StartH, StartHString), minuteString(StartM, StartMString), hourString(EndH, EndHString), minuteString(EndM, EndMString), hourString(H, HString), minuteString(M, MString), duration(time(StartH, StartM), time(EndH, EndM), Duration), before(time(H, M), Duration),
+    termString(Term, TermString), parseDay(DayString, Day), hourString(StartH, StartHString), minuteString(StartM, StartMString), hourString(EndH, EndHString), minuteString(EndM, EndMString), hourString(H, HString), minuteString(M, MString), duration(time(StartH, StartM), time(EndH, EndM), Duration), before(time(H, M), Duration),
     constraints(Constraints), retract(constraints(_)), sort([breakTime(interval(Term, Day, time(StartH, StartM), time(EndH, EndM)), time(H, M)) | Constraints], Sorted), assert(constraints(Sorted))
   ) ;
   writeln("Could not parse and validate at least one of:"),
@@ -110,13 +110,17 @@ handleCommand(["schedule"]) :-
 handleCommand(Unrecognized) :-
   write("Invalid command: "), writeln(Unrecognized).
 
+% string <-> term
+termString(T, S) :-
+  number_string(T, S), 1 =< T, T =< 2.
+
 % string <-> hour
 hourString(H, S) :-
-  number_string(H, S), H < 24.
+  number_string(H, S), 0 =< H, H < 24.
 
 % string <-> minute
 minuteString(M, S) :-
-  number_string(M, S), M < 60.
+  number_string(M, S), 0 =< M, M < 60.
 
 % day as string to day as term
 parseDay("Monday", monday).

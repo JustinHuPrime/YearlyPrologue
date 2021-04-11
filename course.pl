@@ -29,13 +29,13 @@ noCollidingSections([]).
 noCollidingSections([S | Ss]) :- section(S, times, Ts), noCollide1(Ts, Ss), noCollidingSections(Ss).
 
 
-scheduleChoices(Choices, Constraints, AllSchedules) :- setof(C, getCourseList(Choices, C), Lists), scheduleEach(Lists, Constraints, AllSchedules).
+scheduleChoices(Choices, Constraints, AllSchedules) :- findall(C, getCourseList(Choices, C), Unsorted), sort(Unsorted, Lists), scheduleEach(Lists, Constraints, AllSchedules).
 
 scheduleEach([], _, []).
 scheduleEach([Courses | Lists], Constraints, AllSchedules) :- scheduleAll(Courses, Constraints, Schedules), scheduleEach(Lists, Constraints, RemainingSchedules), append(Schedules, RemainingSchedules, AllSchedules).
 
 % Produces true if AllSchedules is the set of all schedules that cover the given courses and meet given constraints
-scheduleAll(Courses, Constraints, AllSchedules) :- setof(S, scheduleSingle(Courses, Constraints, S), AllSchedules).
+scheduleAll(Courses, Constraints, AllSchedules) :- findall(S, scheduleSingle(Courses, Constraints, S), Unsorted), sort(Unsorted, AllSchedules).
 
 % Produces true if AllSecs is a list of sections that cover the given courses, do not collide, and meet given constraints
 scheduleSingle([], []).

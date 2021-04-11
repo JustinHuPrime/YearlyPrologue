@@ -89403,12 +89403,6 @@ section(mine333L2A, number, "L2A").
 section(mine333L2A, type, "Laboratory").
 section(mine333L2A, times, []).
 
-% MINE 333 - W-L
-section(mine333W-L, course, mine333).
-section(mine333W-L, number, "W-L").
-section(mine333W-L, type, "Lecture").
-section(mine333W-L, times, []).
-
 
 % MINE 350
 course(mine350, name, "Modelling and Simulation").

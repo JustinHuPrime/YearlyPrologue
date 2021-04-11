@@ -91,6 +91,15 @@ handleCommand(["add-constraint", "break", TermString, DayString, StartHString, S
   write("End Min    = "), writeln(EndMString),
   write("Hours      = "), writeln(HString),
   write("Minutes    = "), writeln(MString).
+% add-constraint no-classes-on <term> <day>
+handleCommand(["add-constraint", "no-classes-on", TermString, DayString]) :-
+  (
+    termString(Term, TermString), parseDay(DayString, Day),
+    constraints(Constraints), retract(constraints(_)), sort([breakTime(interval(Term, Day, time(0, 0), time(24, 0)), time(24, 0)) | Constraints], Sorted), assert(constraints(Sorted))
+  ) ;
+  writeln("Could not parse and validate at least one of:"),
+  write("Term = "), writeln(TermString),
+  write("Day  = "), writeln(DayString).
 % list-constraints: displays the constraint set
 handleCommand(["list-constraints"]) :-
   constraints(Constraints), displayConstraints(Constraints).

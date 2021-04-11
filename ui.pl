@@ -100,6 +100,15 @@ handleCommand(["add-constraint", "no-classes-on", TermString, DayString]) :-
   writeln("Could not parse and validate at least one of:"),
   write("Term = "), writeln(TermString),
   write("Day  = "), writeln(DayString).
+% add-constraint minimum-credits <term> <credits>
+handleCommand(["add-constraint", "minimum-credits", TermString, CreditsString]) :-
+  (
+    termString(Term, TermString), nonNegativeNumberString(Credits, CreditsString),
+    constraints(Constraints), retract(constraints(_)), sort([minimumCredits(Credits, Term) | Constraints], Sorted), assert(constraints(Sorted))
+  ) ;
+  writeln("Could not parse and validate at least one of:"),
+  write("Term    = "), writeln(TermString),
+  write("Credits = "), writeln(CreditsString).
 % list-constraints: displays the constraint set
 handleCommand(["list-constraints"]) :-
   constraints(Constraints), displayConstraints(Constraints).
@@ -118,6 +127,10 @@ handleCommand(["schedule"]) :-
 % Bad command gets caught here
 handleCommand(Unrecognized) :-
   write("Invalid command: "), writeln(Unrecognized).
+
+% string <-> non-negative number
+nonNegativeNumberString(N, S) :-
+  number_string(N, S), 0 =< N.
 
 % string <-> term
 termString(T, S) :-
@@ -171,6 +184,8 @@ displayConstraint(breakTime(interval(Term, Day, Start, End), Duration)) :-
     write("At least "), writeTime(Duration), write(" free between ")
   ),
   writeTime(Start), write(" and "), writeTime(End), write(" during "), write(Day), write(" in term "), writeln(Term).
+displayConstraint(minimumCredits(Credits, Term)) :-
+  write("At least "), write(Credits), write(" credits in term "), writeln(Term).
 
 % display a time
 writeTime(time(H, M)) :-

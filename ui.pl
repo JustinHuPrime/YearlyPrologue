@@ -26,8 +26,7 @@ handleCommand(["end_of_file"]) :-
 % add-required <coursename>: adds a course to the required set
 handleCommand(["add-required", NameString]) :-
   atom_string(Name, NameString),
-  requiredCourses(RequiredCourses),
-  retract(requiredCourses(_)), sort([Name | RequiredCourses], Sorted), assert(requiredCourses(Sorted)).
+  retract(requiredCourses(RequiredCourses)), sort([Name | RequiredCourses], Sorted), assert(requiredCourses(Sorted)).
 % list-required: displays the required set
 handleCommand(["list-required"]) :-
   requiredCourses(RequiredCourses), writeln(RequiredCourses).
@@ -38,8 +37,7 @@ handleCommand(["clear-required"]) :-
 % add-optional <coursename>: adds a course to the optional set
 handleCommand(["add-optional", NameString]) :-
   atom_string(Name, NameString),
-  optionalCourses(OptionalCourses),
-  retract(optionalCourses(_)), sort([Name | OptionalCourses], Sorted), assert(optionalCourses(Sorted)).
+  retract(optionalCourses(OptionalCourses)), sort([Name | OptionalCourses], Sorted), assert(optionalCourses(Sorted)).
 % list-optional: displays the optional set
 handleCommand(["list-optional"]) :-
   optionalCourses(OptionalCourses), numOptional(NumOptional), write(NumOptional), write(" required from "), writeln(OptionalCourses).
@@ -58,7 +56,7 @@ handleCommand(["num-optional", NumString]) :-
 handleCommand(["add-constraint", "no-classes-before", TermString, DayString, HString, MString]) :-
   (
     termString(Term, TermString), parseDay(DayString, Day), hourString(H, HString), minuteString(M, MString), duration(time(00, 00), time(H, M), Duration),
-    constraints(Constraints), retract(constraints(_)), sort([breakTime(interval(Term, Day, time(00, 00), time(H, M)), Duration) | Constraints], Sorted), assert(constraints(Sorted))
+    retract(constraints(Constraints)), sort([breakTime(interval(Term, Day, time(00, 00), time(H, M)), Duration) | Constraints], Sorted), assert(constraints(Sorted))
   ) ;
   writeln("Could not parse and validate at least one of:"),
   write("Term = "), writeln(TermString),
@@ -69,7 +67,7 @@ handleCommand(["add-constraint", "no-classes-before", TermString, DayString, HSt
 handleCommand(["add-constraint", "no-classes-after", TermString, DayString, HString, MString]) :-
   (
     termString(Term, TermString), parseDay(DayString, Day), hourString(H, HString), minuteString(M, MString), duration(time(H, M), time(24, 00), Duration),
-    constraints(Constraints), retract(constraints(_)), sort([breakTime(interval(Term, Day, time(H, M), time(24, 00)), Duration) | Constraints], Sorted), assert(constraints(Sorted))
+    retract(constraints(Constraints)), sort([breakTime(interval(Term, Day, time(H, M), time(24, 00)), Duration) | Constraints], Sorted), assert(constraints(Sorted))
   ) ;
   writeln("Could not parse and validate at least one of:"),
   write("Term = "), writeln(TermString),
@@ -80,7 +78,7 @@ handleCommand(["add-constraint", "no-classes-after", TermString, DayString, HStr
 handleCommand(["add-constraint", "break", TermString, DayString, StartHString, StartMString, EndHString, EndMString, HString, MString]) :-
   (
     termString(Term, TermString), parseDay(DayString, Day), hourString(StartH, StartHString), minuteString(StartM, StartMString), hourString(EndH, EndHString), minuteString(EndM, EndMString), hourString(H, HString), minuteString(M, MString), duration(time(StartH, StartM), time(EndH, EndM), Duration), before(time(H, M), Duration),
-    constraints(Constraints), retract(constraints(_)), sort([breakTime(interval(Term, Day, time(StartH, StartM), time(EndH, EndM)), time(H, M)) | Constraints], Sorted), assert(constraints(Sorted))
+    retract(constraints(Constraints)), sort([breakTime(interval(Term, Day, time(StartH, StartM), time(EndH, EndM)), time(H, M)) | Constraints], Sorted), assert(constraints(Sorted))
   ) ;
   writeln("Could not parse and validate at least one of:"),
   write("Term       = "), writeln(TermString),
@@ -95,7 +93,7 @@ handleCommand(["add-constraint", "break", TermString, DayString, StartHString, S
 handleCommand(["add-constraint", "no-classes-on", TermString, DayString]) :-
   (
     termString(Term, TermString), parseDay(DayString, Day),
-    constraints(Constraints), retract(constraints(_)), sort([breakTime(interval(Term, Day, time(0, 0), time(24, 0)), time(24, 0)) | Constraints], Sorted), assert(constraints(Sorted))
+    retract(constraints(Constraints)), sort([breakTime(interval(Term, Day, time(0, 0), time(24, 0)), time(24, 0)) | Constraints], Sorted), assert(constraints(Sorted))
   ) ;
   writeln("Could not parse and validate at least one of:"),
   write("Term = "), writeln(TermString),
@@ -104,7 +102,7 @@ handleCommand(["add-constraint", "no-classes-on", TermString, DayString]) :-
 handleCommand(["add-constraint", "minimum-credits", TermString, CreditsString]) :-
   (
     termString(Term, TermString), nonNegativeNumberString(Credits, CreditsString),
-    constraints(Constraints), retract(constraints(_)), sort([minimumCredits(Credits, Term) | Constraints], Sorted), assert(constraints(Sorted))
+    retract(constraints(Constraints)), sort([minimumCredits(Credits, Term) | Constraints], Sorted), assert(constraints(Sorted))
   ) ;
   writeln("Could not parse and validate at least one of:"),
   write("Term    = "), writeln(TermString),
@@ -113,7 +111,7 @@ handleCommand(["add-constraint", "minimum-credits", TermString, CreditsString]) 
 handleCommand(["add-constraint", "maximum-credits", TermString, CreditsString]) :-
   (
     termString(Term, TermString), nonNegativeNumberString(Credits, CreditsString),
-    constraints(Constraints), retract(constraints(_)), sort([maximumCredits(Credits, Term) | Constraints], Sorted), assert(constraints(Sorted))
+    retract(constraints(Constraints)), sort([maximumCredits(Credits, Term) | Constraints], Sorted), assert(constraints(Sorted))
   ) ;
   writeln("Could not parse and validate at least one of:"),
   write("Term    = "), writeln(TermString),

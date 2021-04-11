@@ -124,12 +124,15 @@ course(cpsc110, credits, 4).
 section(cpsc110101, times, [interval(1, tuesday, time(12, 30), time(14, 00)), interval(1, thursday, time(12, 30), time(14, 00))]).
 section(cpsc110101, course, cpsc110).
 section(cpsc110101, type, lecture).
+section(cpsc110101, number, "101").
 section(cpsc110L11, times, [interval(1, wednesday, time(18, 00), time(21, 00))]).
 section(cpsc110L11, course, cpsc110).
 section(cpsc110L11, type, lab).
+section(cpsc110L11, number, "L11").
 section(cpsc110L21, times, [interval(2, friday, time(18, 00), time(21, 00))]).
 section(cpsc110L21, course, cpsc110).
 section(cpsc110L21, type, lab).
+section(cpsc110L21, number, "L21").
 
 course(cpsc121, requiredSections, [lecture, lab]).
 course(cpsc121, name, "CPSC 121 Models of Computation").
@@ -138,29 +141,38 @@ course(cpsc121, credits, 4).
 section(cpsc121101, times, [interval(2, tuesday, time(12, 30), time(14, 00)), interval(2, thursday, time(12, 30), time(14, 00))]).
 section(cpsc121101, course, cpsc121).
 section(cpsc121101, type, lecture).
+section(cpsc121101, number, "101").
 section(cpsc121L11, times, [interval(1, wednesday, time(18, 00), time(21, 00))]).
 section(cpsc121L11, course, cpsc121).
 section(cpsc121L11, type, lab).
+section(cpsc121L11, number, "L11").
 section(cpsc121L21, times, [interval(2, friday, time(18, 00), time(21, 00))]).
 section(cpsc121L21, course, cpsc121).
 section(cpsc121L21, type, lab).
+section(cpsc121L21, number, "L21").
 
 course(cpsc100, requiredSections, [lecture]).
+course(cpsc100, name, "CPSC 100 Intro To Computational Thinking").
 course(cpsc100, credits, 3).
 
 section(cpsc100101, times, [interval(1, tuesday, time(12, 30), time(14, 00)), interval(1, thursday, time(12, 30), time(14, 00))]).
 section(cpsc100101, course, cpsc100).
 section(cpsc100101, type, lecture).
+section(cpsc100101, number, "101").
 section(cpsc100102, times, [interval(1, monday, time(12, 30), time(14, 00)), interval(1, friday, time(12, 30), time(14, 00))]).
 section(cpsc100102, course, cpsc100).
 section(cpsc100102, type, lecture).
+section(cpsc100102, number, "102").
 section(cpsc100103, times, [interval(1, saturday, time(12, 30), time(14, 00))]).
 section(cpsc100103, course, cpsc100).
 section(cpsc100103, type, lecture).
+section(cpsc100103, number, "103").
 
 course(cpsc200, requiredSections, [lecture]).
+course(cpsc200, name, "CPSC 200 Some Second Year CS Course").
 course(cpsc200, credits, 3).
 
 section(cpsc200101, times, [interval(1, monday, time(12, 30), time(14, 00)), interval(1, friday, time(12, 30), time(14, 00))]).
 section(cpsc200101, course, cpsc200).
 section(cpsc200101, type, lecture).
+section(cpsc200101, number, "101").

@@ -98,7 +98,7 @@ inTerm(Course, Term, [Section | Sections]) :- section(Section, course, Course2),
 
 % true if intervals is all intervals in half hour permutations between the start and end times that last duration long.
 permuteIntervals(interval(_, _, Start, End), Duration, []) :- duration(Start, NewEnd, Duration), strictlyBefore(End, NewEnd).
-permuteIntervals(interval(Term, Day, Start, End), Duration, [interval(Term, Day, Start, NewEnd) | Intervals]) :- duration(Start, NewEnd, Duration), duration(Start, NewStart, time(0, 30)), permuteIntervals(interval(Term, Day, NewStart, End), Duration, Intervals).
+permuteIntervals(interval(Term, Day, Start, End), Duration, [interval(Term, Day, Start, NewEnd) | Intervals]) :- duration(Start, NewEnd, Duration), before(NewEnd, End), duration(Start, NewStart, time(0, 30)), permuteIntervals(interval(Term, Day, NewStart, End), Duration, Intervals).
 
 % true if the duration between start and end time is Duration, (works when we know duration but not end time)
 duration(time(StartHour, StartMinute), time(EndHour, EndMinute), time(DurationHour, DurationMinute)) :- (DurationMinute + StartMinute < 60)

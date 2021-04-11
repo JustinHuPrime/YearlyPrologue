@@ -141,9 +141,33 @@ handleCommand(["schedule"]) :-
   scheduleChoices([courseChoices(RequiredCourses, RequiredCoursesLen), courseChoices(OptionalCourses, NumOptional)], Constraints, Schedules),
   displaySchedules(Schedules).
 
+% help: displays command syntax and help
+handleCommand(["help"]) :-
+  writeln("Recognized commands:"),
+  writeln("add-required <coursename>: adds a course to the required set"),
+  writeln("list-required: displays the required set"),
+  writeln("clear-required: clears the required set"),
+  writeln("add-optional <coursename>: adds a course to the optional set"),
+  writeln("list-optional: displays the optional set"),
+  writeln("clear-optional: clears the optional set"),
+  writeln("num-optional <n>: sets numOptional - checked for range safety"),
+  writeln("add-constraint no-classes-before <term> <day> <hour> <minute>: adds a constraint to avoid classes between 00:00 and hour:minute on day in term"),
+  writeln("add-constraint no-classes-after <term> <day> <hour> <minute>: adds a constraint to avoid classes between hour:minute and 24:00 on day in term"),
+  writeln("add-constraint break <term> <day> <startHour> <startMinute> <endHour> <endMinute> <hours> <minutes>: adds a constraints to have hours:minutes free between `start` and `end`"),
+  writeln("add-constraint no-classes-on <term> <day>: adds a constraint to avoid classes for full day of given term"),
+  writeln("add-constraint minimum-credits <term> <credits>: adds a credit floor to a term"),
+  writeln("add-constraint maximum-credits <term> <credits>: adds a credit cap to a term"),
+  writeln("add-constraint course-in-term <course> <term>: adds a constraint to force course to be in term"),
+  writeln("list-constraints: displays the constraint set"),
+  writeln("clear-constraints: clear the constraint set"),
+  writeln("schedule: shows all possible schedules using given course lists and constraint set"),
+  writeln("help: displays command syntax and help"),
+  writeln("quit: exit the scheduler").
+
 % Bad command gets caught here
 handleCommand(Unrecognized) :-
-  write("Invalid command: "), writeln(Unrecognized).
+  write("Invalid command: "), writeln(Unrecognized),
+  handleCommand(["help"]).
 
 % string <-> non-negative number
 nonNegativeNumberString(N, S) :-

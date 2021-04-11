@@ -10,44 +10,44 @@ constraints([]). % constraint set
 loop :- !,
   read_line_to_string(user_input, Input),
   split_string(Input, " ", " ", Tokens),
-  handle_command(Tokens),
+  handleCommand(Tokens),
   loop.
 
 % empty commands are ignored
-handle_command([""]).
+handleCommand([""]).
 
 % quit and end_of_file halt. (note - EOF is a term, but gets coerced into a string)
-handle_command(["quit"]) :-
+handleCommand(["quit"]) :-
   writeln("Goodbye!"),
   halt.
-handle_command(["end_of_file"]) :-
-  handle_command(["quit"]).
+handleCommand(["end_of_file"]) :-
+  handleCommand(["quit"]).
 
 % add-required <coursename>: adds a course to the required set
-handle_command(["add-required", NameString]) :-
+handleCommand(["add-required", NameString]) :-
   atom_string(Name, NameString),
   requiredCourses(RequiredCourses),
   retract(requiredCourses(_)), sort([Name | RequiredCourses], Sorted), assert(requiredCourses(Sorted)).
 % list-required: displays the required set
-handle_command(["list-required"]) :-
+handleCommand(["list-required"]) :-
   requiredCourses(RequiredCourses), writeln(RequiredCourses).
 % clear-required: clears the required set
-handle_command(["clear-required"]) :-
+handleCommand(["clear-required"]) :-
   retract(requiredCourses(_)), assert(requiredCourses([])).
 
 % add-optional <coursename>: adds a course to the optional set
-handle_command(["add-optional", NameString]) :-
+handleCommand(["add-optional", NameString]) :-
   atom_string(Name, NameString),
   optionalCourses(OptionalCourses),
   retract(optionalCourses(_)), sort([Name | OptionalCourses], Sorted), assert(optionalCourses(Sorted)).
 % list-optional: displays the optional set
-handle_command(["list-optional"]) :-
+handleCommand(["list-optional"]) :-
   optionalCourses(OptionalCourses), numOptional(NumOptional), write(NumOptional), write(" required from "), writeln(OptionalCourses).
 % clear-optional: clears the optional set
-handle_command(["clear-optional"]) :-
+handleCommand(["clear-optional"]) :-
   retract(optionalCourses(_)), assert(optionalCourses([])).
 % num-optional <n>: sets numOptional - checked for range safety.
-handle_command(["num-optional", NumString]) :-
+handleCommand(["num-optional", NumString]) :-
   optionalCourses(OptionalCourses), length(OptionalCourses, OptionalCoursesLen),
   (
     number_string(Num, NumString), Num =< OptionalCoursesLen, Num >= 0, retract(numOptional(_)), assert(numOptional(Num)) ;
@@ -55,9 +55,9 @@ handle_command(["num-optional", NumString]) :-
   ).
 
 % add-constraint no-classes-before <term> <day> <hour> <minute>: adds a constraint to avoid classes between 00:00 and hour:minute on day in term
-handle_command(["add-constraint", "no-classes-before", TermString, DayString, HString, MString]) :-
+handleCommand(["add-constraint", "no-classes-before", TermString, DayString, HString, MString]) :-
   (
-    number_string(Term, TermString), parse_day(DayString, Day), hour_string(H, HString), minute_string(M, MString), duration(time(00, 00), time(H, M), Duration),
+    number_string(Term, TermString), parseDay(DayString, Day), hourString(H, HString), minuteString(M, MString), duration(time(00, 00), time(H, M), Duration),
     constraints(Constraints), retract(constraints(_)), sort([breakTime(interval(Term, Day, time(00, 00), time(H, M)), Duration) | Constraints], Sorted), assert(constraints(Sorted))
   ) ;
   writeln("Could not parse and validate at least one of:"),
@@ -66,9 +66,9 @@ handle_command(["add-constraint", "no-classes-before", TermString, DayString, HS
   write("Hour = "), writeln(HString),
   write("Min  = "), writeln(MString).
 % add-constraint no-classes-after <term> <day> <hour> <minute>: adds a constraint to avoid classes between hour:minute and 24:00 on day in term
-handle_command(["add-constraint", "no-classes-after", TermString, DayString, HString, MString]) :-
+handleCommand(["add-constraint", "no-classes-after", TermString, DayString, HString, MString]) :-
   (
-    number_string(Term, TermString), parse_day(DayString, Day), hour_string(H, HString), minute_string(M, MString), duration(time(H, M), time(24, 00), Duration),
+    number_string(Term, TermString), parseDay(DayString, Day), hourString(H, HString), minuteString(M, MString), duration(time(H, M), time(24, 00), Duration),
     constraints(Constraints), retract(constraints(_)), sort([breakTime(interval(Term, Day, time(H, M), time(24, 00)), Duration) | Constraints], Sorted), assert(constraints(Sorted))
   ) ;
   writeln("Could not parse and validate at least one of:"),
@@ -77,9 +77,9 @@ handle_command(["add-constraint", "no-classes-after", TermString, DayString, HSt
   write("Hour = "), writeln(HString),
   write("Min  = "), writeln(MString).
 % add-constraint break <term> <day> <startHour> <startMinute> <endHour> <endMinute> <hours> <minutes>: adds a constraints to have hours:minutes free between `start` and `end`
-handle_command(["add-constraint", "break", TermString, DayString, StartHString, StartMString, EndHString, EndMString, HString, MString]) :-
+handleCommand(["add-constraint", "break", TermString, DayString, StartHString, StartMString, EndHString, EndMString, HString, MString]) :-
   (
-    number_string(Term, TermString), parse_day(DayString, Day), hour_string(StartH, StartHString), minute_string(StartM, StartMString), hour_string(EndH, EndHString), minute_string(EndM, EndMString), hour_string(H, HString), minute_string(M, MString), duration(time(StartH, StartM), time(EndH, EndM), Duration), before(time(H, M), Duration),
+    number_string(Term, TermString), parseDay(DayString, Day), hourString(StartH, StartHString), minuteString(StartM, StartMString), hourString(EndH, EndHString), minuteString(EndM, EndMString), hourString(H, HString), minuteString(M, MString), duration(time(StartH, StartM), time(EndH, EndM), Duration), before(time(H, M), Duration),
     constraints(Constraints), retract(constraints(_)), sort([breakTime(interval(Term, Day, time(StartH, StartM), time(EndH, EndM)), time(H, M)) | Constraints], Sorted), assert(constraints(Sorted))
   ) ;
   writeln("Could not parse and validate at least one of:"),
@@ -92,14 +92,14 @@ handle_command(["add-constraint", "break", TermString, DayString, StartHString, 
   write("Hours      = "), writeln(HString),
   write("Minutes    = "), writeln(MString).
 % list-constraints: displays the constraint set
-handle_command(["list-constraints"]) :-
+handleCommand(["list-constraints"]) :-
   constraints(Constraints), displayConstraints(Constraints).
 % clear-constraints: clear the constraint set
-handle_command(["clear-constraints"]) :-
+handleCommand(["clear-constraints"]) :-
   retract(constraints(_)), assert(constraints([])).
 
 % schedule: shows all possible schedules using given course lists and constraint set.
-handle_command(["schedule"]) :-
+handleCommand(["schedule"]) :-
   requiredCourses(RequiredCourses), length(RequiredCourses, RequiredCoursesLen),
   optionalCourses(OptionalCourses), numOptional(NumOptional),
   constraints(Constraints),
@@ -107,32 +107,32 @@ handle_command(["schedule"]) :-
   displaySchedules(Schedules).
 
 % Bad command gets caught here
-handle_command(Unrecognized) :-
+handleCommand(Unrecognized) :-
   write("Invalid command: "), writeln(Unrecognized).
 
 % string <-> hour
-hour_string(H, S) :-
+hourString(H, S) :-
   number_string(H, S), H < 24.
 
 % string <-> minute
-minute_string(M, S) :-
+minuteString(M, S) :-
   number_string(M, S), M < 60.
 
 % day as string to day as term
-parse_day("Monday", monday).
-parse_day("monday", monday).
-parse_day("Tuesday", tuesday).
-parse_day("tuesday", tuesday).
-parse_day("wednesday", wednesday).
-parse_day("Wednesday", wednesday).
-parse_day("thursday", thursday).
-parse_day("Thursday", thursday).
-parse_day("friday", friday).
-parse_day("Friday", friday).
-parse_day("saturday", saturday).
-parse_day("Saturday", saturday).
-parse_day("sunday", sunday).
-parse_day("Sunday", sunday).
+parseDay("Monday", monday).
+parseDay("monday", monday).
+parseDay("Tuesday", tuesday).
+parseDay("tuesday", tuesday).
+parseDay("wednesday", wednesday).
+parseDay("Wednesday", wednesday).
+parseDay("thursday", thursday).
+parseDay("Thursday", thursday).
+parseDay("friday", friday).
+parseDay("Friday", friday).
+parseDay("saturday", saturday).
+parseDay("Saturday", saturday).
+parseDay("sunday", sunday).
+parseDay("Sunday", sunday).
 
 % displays a list of constraints with auxiliary length info
 displayConstraints([]) :-

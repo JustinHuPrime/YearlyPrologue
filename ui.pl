@@ -57,10 +57,10 @@ handle_command(["num-optional", NumString]) :-
 % add-constraint no-classes-before <term> <day> <hour> <minute>: adds a constraint to avoid classes between 00:00 and hour:minute on day in term
 handle_command(["add-constraint", "no-classes-before", TermString, DayString, HString, MString]) :-
   (
-    number_string(Term, TermString), parse_day(DayString, Day), number_string(H, HString), number_string(M, MString), duration(time(00, 00), time(H, M), Duration),
+    number_string(Term, TermString), parse_day(DayString, Day), hour_string(H, HString), minute_string(M, MString), duration(time(00, 00), time(H, M), Duration),
     constraints(Constraints), retract(constraints(_)), sort([breakTime(interval(Term, Day, time(00, 00), time(H, M)), Duration) | Constraints], Sorted), assert(constraints(Sorted))
   ) ;
-  writeln("could not parse at least one of:"),
+  writeln("Could not parse and validate at least one of:"),
   write("Term = "), writeln(TermString),
   write("Day  = "), writeln(DayString),
   write("Hour = "), writeln(HString),
@@ -68,14 +68,29 @@ handle_command(["add-constraint", "no-classes-before", TermString, DayString, HS
 % add-constraint no-classes-after <term> <day> <hour> <minute>: adds a constraint to avoid classes between hour:minute and 24:00 on day in term
 handle_command(["add-constraint", "no-classes-after", TermString, DayString, HString, MString]) :-
   (
-    number_string(Term, TermString), parse_day(DayString, Day), number_string(H, HString), number_string(M, MString), duration(time(H, M), time(24, 00), Duration),
+    number_string(Term, TermString), parse_day(DayString, Day), hour_string(H, HString), minute_string(M, MString), duration(time(H, M), time(24, 00), Duration),
     constraints(Constraints), retract(constraints(_)), sort([breakTime(interval(Term, Day, time(H, M), time(24, 00)), Duration) | Constraints], Sorted), assert(constraints(Sorted))
   ) ;
-  writeln("could not parse at least one of:"),
+  writeln("Could not parse and validate at least one of:"),
   write("Term = "), writeln(TermString),
   write("Day  = "), writeln(DayString),
   write("Hour = "), writeln(HString),
   write("Min  = "), writeln(MString).
+% add-constraint break <term> <day> <startHour> <startMinute> <endHour> <endMinute> <hours> <minutes>: adds a constraints to have hours:minutes free between `start` and `end`
+handle_command(["add-constraint", "break", TermString, DayString, StartHString, StartMString, EndHString, EndMString, HString, MString]) :-
+  (
+    number_string(Term, TermString), parse_day(DayString, Day), hour_string(StartH, StartHString), minute_string(StartM, StartMString), hour_string(EndH, EndHString), minute_string(EndM, EndMString), hour_string(H, HString), minute_string(M, MString), duration(time(StartH, StartM), time(EndH, EndM), Duration), before(time(H, M), Duration),
+    constraints(Constraints), retract(constraints(_)), sort([breakTime(interval(Term, Day, time(StartH, StartM), time(EndH, EndM)), time(H, M)) | Constraints], Sorted), assert(constraints(Sorted))
+  ) ;
+  writeln("Could not parse and validate at least one of:"),
+  write("Term       = "), writeln(TermString),
+  write("Day        = "), writeln(DayString),
+  write("Start Hour = "), writeln(StartHString),
+  write("Start Min  = "), writeln(StartMString),
+  write("End Hour   = "), writeln(EndHString),
+  write("End Min    = "), writeln(EndMString),
+  write("Hours      = "), writeln(HString),
+  write("Minutes    = "), writeln(MString).
 % list-constraints: displays the constraint set
 handle_command(["list-constraints"]) :-
   constraints(Constraints), displayConstraints(Constraints).
@@ -94,6 +109,14 @@ handle_command(["schedule"]) :-
 % Bad command gets caught here
 handle_command(Unrecognized) :-
   write("Invalid command: "), writeln(Unrecognized).
+
+% string <-> hour
+hour_string(H, S) :-
+  number_string(H, S), H < 24.
+
+% string <-> minute
+minute_string(M, S) :-
+  number_string(M, S), M < 60.
 
 % day as string to day as term
 parse_day("Monday", monday).

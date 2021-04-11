@@ -1,9 +1,7 @@
-:- [course_data]
+:- [course_data].
 
 % time/2 :- A 24-hour timepoint, with some hour and minute
 % interval/4 :- An interval in some term, on some day, starting at some timepoint and ending a some timepoint
-
-:- discontiguous section/3, course/3.
 
 % True if first timepoint is before second timepoint
 before(time(H1, M1), time(H2, M2)) :- H1 < H2 ; (H1 = H2, M1 =< M2).

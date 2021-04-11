@@ -116,6 +116,16 @@ handleCommand(["add-constraint", "maximum-credits", TermString, CreditsString]) 
   writeln("Could not parse and validate at least one of:"),
   write("Term    = "), writeln(TermString),
   write("Credits = "), writeln(CreditsString).
+% add-constraint course-in-term <course> <term>
+% Doesn't check to make sure course is required or optional - we can have a constraint that just doesn't apply.
+handleCommand(["add-constraint", "course-in-term", CourseString, TermString]) :-
+  (
+    atom_string(Course, CourseString), termString(Term, TermString),
+    retract(constraints(Constraints)), sort([courseInTerm(Course, Term) | Constraints], Sorted), assert(constraints(Sorted))
+  ) ;
+  writeln("Could not parse and validate at least one of:"),
+  write("Term   = "), writeln(TermString),
+  write("Course = "), writeln(CourseString).
 % list-constraints: displays the constraint set
 handleCommand(["list-constraints"]) :-
   constraints(Constraints), displayConstraints(Constraints).
@@ -195,6 +205,8 @@ displayConstraint(minimumCredits(Credits, Term)) :-
   write("At least "), write(Credits), write(" credits in term "), writeln(Term).
 displayConstraint(maximumCredits(Credits, Term)) :-
   write("No more than "), write(Credits), write(" credits in term "), writeln(Term).
+displayConstraint(courseInTerm(Course, Term)) :-
+  write(Course), write(" must happen in term "), writeln(Term).
 
 % display a time
 writeTime(time(H, M)) :-

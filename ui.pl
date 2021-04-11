@@ -163,6 +163,8 @@ displayConstraintList([C | Cs]) :-
   displayConstraint(C), displayConstraintList(Cs).
 
 % display a constraint
+displayConstraint(breakTime(interval(Term, Day, time(00, 00), time(24, 00)), time(24, 00))) :-
+  write("Free on "), write(Day), write(" in term "), writeln(Term).
 displayConstraint(breakTime(interval(Term, Day, Start, End), Duration)) :-
   (
     duration(Start, End, Duration), write("Free between ") ;

@@ -97,13 +97,26 @@ inTerm(Course, Term, [Section | Sections]) :- section(Section, course, Course), 
 inTerm(Course, Term, [Section | Sections]) :- section(Section, course, Course2), Course \= Course2, !, inTerm(Course, Term, Sections).
 
 % true if intervals is all intervals in half hour permutations between the start and end times that last duration long.
-permuteIntervals(interval(_, _, Start, End), Duration, []) :- duration(Start, NewEnd, Duration), strictlyBefore(End, NewEnd).
-permuteIntervals(interval(Term, Day, Start, End), Duration, [interval(Term, Day, Start, NewEnd) | Intervals]) :- duration(Start, NewEnd, Duration), before(NewEnd, End), duration(Start, NewStart, time(0, 30)), !, permuteIntervals(interval(Term, Day, NewStart, End), Duration, Intervals).
+permuteIntervals(interval(_, _, Start, End), Duration, []) :- solveForEndTime(Start, NewEnd, Duration), strictlyBefore(End, NewEnd).
+permuteIntervals(interval(Term, Day, Start, End), Duration, [interval(Term, Day, Start, NewEnd) | Intervals]) :- solveForEndTime(Start, NewEnd, Duration), before(NewEnd, End), solveForEndTime(Start, NewStart, time(0, 30)), !, permuteIntervals(interval(Term, Day, NewStart, End), Duration, Intervals).
 
 % true if the duration between start and end time is Duration, (works when we know duration but not end time)
-duration(time(StartHour, StartMinute), time(EndHour, EndMinute), time(DurationHour, DurationMinute)) :- (DurationMinute + StartMinute < 60)
-    -> EndHour is StartHour + DurationHour, EndMinute is DurationMinute + StartMinute
-	; EndHour is DurationHour + StartHour + 1, EndMinute is DurationMinute + StartMinute - 60.
+solveForDuration(time(SH, SM), time(EH, EM), time(DH, DM)) :-
+    SM =< EM,
+    DH is EH - SH,
+    DM is EM - SM.
+solveForDuration(time(SH, SM), time(EH, EM), time(DH, DM)) :-
+    SM > EM,
+    DH is EH - SH + 1,
+    DM is 60 + EM - SM.
+solveForEndTime(time(SH, SM), time(EH, EM), time(DH, DM)) :-
+    SM + DM < 60,
+    EH is SH + DH,
+    EM is SM + DM.
+solveForEndTime(time(SH, SM), time(EH, EM), time(DH, DM)) :-
+    SM + DM >= 60,
+    EH is SH + DH + 1,
+    EM is SM + DM - 60.
 
 % true if one interval in given intervals doesn't collide with given sections. (ormap)
 oneIntervalFree([Interval | _], Sections) :- noCollide2(Interval, Sections), !.

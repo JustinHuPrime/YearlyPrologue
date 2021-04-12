@@ -55,7 +55,7 @@ handleCommand(["num-optional", NumString]) :-
 % add-constraint no-classes-before <term> <day> <hour> <minute>: adds a constraint to avoid classes between 00:00 and hour:minute on day in term
 handleCommand(["add-constraint", "no-classes-before", TermString, DayString, HString, MString]) :-
   (
-    termString(Term, TermString), parseDay(DayString, Day), hourString(H, HString), minuteString(M, MString), duration(time(00, 00), time(H, M), Duration),
+    termString(Term, TermString), parseDay(DayString, Day), hourString(H, HString), minuteString(M, MString), solveForDuration(time(00, 00), time(H, M), Duration),
     retract(constraints(Constraints)), sort([breakTime(interval(Term, Day, time(00, 00), time(H, M)), Duration) | Constraints], Sorted), assert(constraints(Sorted))
   ) ;
   writeln("Could not parse and validate at least one of:"),
@@ -66,7 +66,7 @@ handleCommand(["add-constraint", "no-classes-before", TermString, DayString, HSt
 % add-constraint no-classes-after <term> <day> <hour> <minute>: adds a constraint to avoid classes between hour:minute and 24:00 on day in term
 handleCommand(["add-constraint", "no-classes-after", TermString, DayString, HString, MString]) :-
   (
-    termString(Term, TermString), parseDay(DayString, Day), hourString(H, HString), minuteString(M, MString), duration(time(H, M), time(24, 00), Duration),
+    termString(Term, TermString), parseDay(DayString, Day), hourString(H, HString), minuteString(M, MString), solveForDuration(time(H, M), time(24, 00), Duration),
     retract(constraints(Constraints)), sort([breakTime(interval(Term, Day, time(H, M), time(24, 00)), Duration) | Constraints], Sorted), assert(constraints(Sorted))
   ) ;
   writeln("Could not parse and validate at least one of:"),
@@ -77,7 +77,7 @@ handleCommand(["add-constraint", "no-classes-after", TermString, DayString, HStr
 % add-constraint break <term> <day> <startHour> <startMinute> <endHour> <endMinute> <hours> <minutes>: adds a constraints to have hours:minutes free between `start` and `end`
 handleCommand(["add-constraint", "break", TermString, DayString, StartHString, StartMString, EndHString, EndMString, HString, MString]) :-
   (
-    termString(Term, TermString), parseDay(DayString, Day), hourString(StartH, StartHString), minuteString(StartM, StartMString), hourString(EndH, EndHString), minuteString(EndM, EndMString), hourString(H, HString), minuteString(M, MString), duration(time(StartH, StartM), time(EndH, EndM), Duration), before(time(H, M), Duration),
+    termString(Term, TermString), parseDay(DayString, Day), hourString(StartH, StartHString), minuteString(StartM, StartMString), hourString(EndH, EndHString), minuteString(EndM, EndMString), hourString(H, HString), minuteString(M, MString), solveForDuration(time(StartH, StartM), time(EndH, EndM), Duration), before(time(H, M), Duration),
     retract(constraints(Constraints)), sort([breakTime(interval(Term, Day, time(StartH, StartM), time(EndH, EndM)), time(H, M)) | Constraints], Sorted), assert(constraints(Sorted))
   ) ;
   writeln("Could not parse and validate at least one of:"),
@@ -221,7 +221,7 @@ displayConstraint(breakTime(interval(Term, Day, time(00, 00), time(24, 00)), tim
   write("Free on "), write(Day), write(" in term "), writeln(Term).
 displayConstraint(breakTime(interval(Term, Day, Start, End), Duration)) :-
   (
-    duration(Start, End, Duration), write("Free between ") ;
+    solveForDuration(Start, End, Duration), write("Free between ") ;
     write("At least "), writeTime(Duration), write(" free between ")
   ),
   writeTime(Start), write(" and "), writeTime(End), write(" during "), write(Day), write(" in term "), writeln(Term).

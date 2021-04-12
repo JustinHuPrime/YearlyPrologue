@@ -59,7 +59,7 @@ getSections(C, S) :- course(C, requiredSections, Reqs), !, allRequiredSections(C
 
 % true if for a given course and required section types, we have a section of that type for that course
 allRequiredSections(_, [], []).
-allRequiredSections(C, [Req | Reqs], [S | Ss]) :- section(S, course, C), section(S, type, Req), !, allRequiredSections(C, Reqs, Ss).
+allRequiredSections(C, [Req | Reqs], [S | Ss]) :- section(S, course, C), section(S, type, Req), allRequiredSections(C, Reqs, Ss).
 
 % Checks that all sections are in the same terms (if one section is in both terms, so must the other sections)
 allSameTerm([]).
